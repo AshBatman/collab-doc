@@ -1,0 +1,53 @@
+{
+	"info": {
+		"_postman_id": "2018f406-1ca4-4d72-a75c-d400caba2f3e",
+		"name": "Rocketium",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "22368850"
+	},
+	"item": [
+		{
+			"name": "/api/healthz",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/api/healthz",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"healthz"
+					]
+				},
+				"description": "Healthz API"
+			},
+			"response": []
+		},
+		{
+			"name": "/api/user/ashrit",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5000/api/user/ashrit",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"user",
+						"ashrit"
+					]
+				},
+				"description": "Create user API"
+			},
+			"response": []
+		}
+	]
+}
