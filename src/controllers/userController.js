@@ -17,9 +17,8 @@ const createUser = async (req, res) => {
 
     return res.status(statusCodes.CREATED.code).json({ message: 'User created' });
   } catch (error) {
-    console.log(error)
     return res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({ message: statusCodes.INTERNAL_SERVER_ERROR.message })
   }
 };
 
-module.exports = {createUser}
+module.exports = { createUser }
