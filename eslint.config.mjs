@@ -9,9 +9,15 @@ export default [
       sourceType: "commonjs",
       globals: {
         ...globals.browser,
-        process: "readonly",  // Add this line to ignore process.env
+        process: "readonly",
       },
     },
   },
   pluginJs.configs.recommended,
+  {
+    files: ["**/*.test.js"],  // Apply different rules for test files
+    rules: {
+      'no-undef': 'off', // Disable undefined variable check for test files
+    },
+  },
 ];
