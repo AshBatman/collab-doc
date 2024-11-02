@@ -15,7 +15,7 @@ const createUser = async (req, res) => {
 
     await newUser.save();
 
-    return res.status(statusCodes.CREATED.code).json({ message: 'User created' });
+    return res.status(statusCodes.CREATED.code).json({ message: 'User created', userID: newUser.userID });
   } catch (error) {
     console.log(error);
     return res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({ message: statusCodes.INTERNAL_SERVER_ERROR.message })
