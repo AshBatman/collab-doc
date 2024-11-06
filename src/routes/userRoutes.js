@@ -3,7 +3,7 @@ const { createUser } = require('../controllers/userController');
 
 const router = express.Router();
 
-// Healthz API
+// API to create user
 router.get('/user/:userName', createUser);
 
 module.exports = router;

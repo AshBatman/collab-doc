@@ -21,9 +21,9 @@ const statusCodes = {
   },
 };
 
-REDIS_SYNC_INTERVAL = 2000;
+const MONGO_SYNC_INTERVAL = 5000;
 
 module.exports = {
   statusCodes,
-  REDIS_SYNC_INTERVAL,
+  MONGO_SYNC_INTERVAL
 };
