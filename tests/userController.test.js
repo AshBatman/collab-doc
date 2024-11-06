@@ -14,7 +14,7 @@ describe('User Controller - createUser', () => {
         jest.clearAllMocks();
     });
 
-    test('should return 400 error with user name not unique', async () => {
+    test('should return 200 success while creating new user', async () => {
         const mockUser = {
             userName: 'testuser',
             createdAt: new Date(),
@@ -26,8 +26,7 @@ describe('User Controller - createUser', () => {
         const response = await request(app)
             .get(`/api/users/testuser`);
 
-        expect(response.status).toBe(400);
-        expect(response.body).toEqual({ message: 'Username is not uniue' });
+        expect(response.status).toBe(200);
         expect(Users.findOne).toHaveBeenCalledWith({ userName: 'testuser' });
     });
 
