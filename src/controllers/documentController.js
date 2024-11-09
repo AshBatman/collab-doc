@@ -1,8 +1,8 @@
 const Documents = require("../models/documentModel");
 const Users = require("../models/userModel");
-const {statusCodes} = require("../utils/constants");
+const { statusCodes } = require("../utils/constants");
 const { v4: uuidv4 } = require("uuid");
-const redisClient = require("./config/redis");
+const redisClient = require("../config/redis");
 
 const createDocument = async (req, res) => {
   const { title, ownerId } = req.body;
@@ -66,15 +66,48 @@ const fetchAllDocuments = async (req, res) => {
 const fetchDocumentByID = async (req, res) => {
   try {
     const { id } = req.params;
-    const document = await Documents.findOne({ documentId: id });
+
+    const redisKey = `document:${id}`;
+    const redisDocument = await redisClient.hGetAll(redisKey);
+    const redisUpdatedAt = redisDocument.updatedAt
+      ? new Date(redisDocument.updatedAt)
+      : null;
+
+    let document = await Documents.findOne({ documentId: id });
+
+    let collaboratorIds = [];
+    let collaborators = [];
+
+    if (document.collaborators) {
+      collaboratorIds = document.collaborators.map((collab) => collab.userId);
+      collaborators = await getCollaborators(collaboratorIds);
+      collaborators = collaborators.map((user) => user.username);
+    }
+
+    const ownerName = await getDocumentOwner(document.ownerId);
 
     if (document) {
-      res.status(statusCodes.SUCCESS.code).json(document);
+      const newDocumentResponse = {
+        documentId: document.documentId,
+        title: document.title,
+        content:
+        redisDocument.content && redisUpdatedAt && redisUpdatedAt > new Date(document.updatedAt)
+            ? redisDocument.content
+            : document.content,
+        updatedAt:
+        redisDocument.content && redisUpdatedAt && redisUpdatedAt > new Date(document.updatedAt)
+            ? redisUpdatedAt
+            : document.updatedAt,
+        owner: document.ownerId,
+        ownerName: ownerName.userName,
+        collaborators: collaborators
+      };
+
+      res.status(statusCodes.SUCCESS.code).json(newDocumentResponse);
     } else {
       res.status(404).json({ message: "Document not found" });
     }
   } catch (error) {
-    
     res.status(500).json({
       message: `Something went wrong while fetch the document ${req.params.id}`,
       error,
@@ -120,29 +153,29 @@ const addCollaborator = async (req, res) => {
 };
 
 const saveDocumentsToMongo = async () => {
-    try {
-        const keys = await redisClient.keys('document:*');
+  try {
+    const keys = await redisClient.keys("document:*");
 
-        for (const key of keys) {
-            const documentData = await redisClient.hGetAll(key);
-            if (documentData && documentData.content) {
-                const documentId = key.split(':')[1];
+    for (const key of keys) {
+      const documentData = await redisClient.hGetAll(key);
+      if (documentData && documentData.content) {
+        const documentId = key.split(":")[1];
 
-                await Documents.findOneAndUpdate(
-                    { documentId },
-                    {
-                        content: documentData.content,
-                        updatedAt: new Date(documentData.updatedAt),
-                    },
-                    { upsert: true }
-                );
+        await Documents.findOneAndUpdate(
+          { documentId },
+          {
+            content: documentData.content,
+            updatedAt: new Date(documentData.updatedAt),
+          },
+          { upsert: true }
+        );
 
-                console.log(`Document ${documentId} saved to MongoDB.`);
-            }
-        }
-    } catch (error) {
-        console.error("Error saving documents to MongoDB:", error);
+        console.log(`Document ${documentId} saved to MongoDB.`);
+      }
     }
+  } catch (error) {
+    console.error("Error saving documents to MongoDB:", error);
+  }
 };
 
 module.exports = {
@@ -150,5 +183,5 @@ module.exports = {
   fetchAllDocuments,
   fetchDocumentByID,
   addCollaborator,
-  saveDocumentsToMongo
+  saveDocumentsToMongo,
 };
