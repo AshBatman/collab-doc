@@ -16,7 +16,7 @@ const createDocument = async (req, res) => {
     const savedDocument = await document.save();
     res.status(statusCodes.CREATED.code).json(savedDocument);
   } catch (error) {
-    res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({ message: "Internal server error" });
+    res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({ message: "Internal server error", error });
   }
 };
 
@@ -36,6 +36,7 @@ const getCollaborators = async (collaboratorIds) => {
         username: collab.userName,
       }));
   } catch (error) {
+    console.log(error)
     return [];
   }
 };
