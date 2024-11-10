@@ -10,11 +10,8 @@ const setupSocketHandlers = (io) => {
 
     socket.on("join-document", async (documentId) => {
       socket.join(documentId);
-      console.log(documentId)
       const redisKey = `document:${documentId}`;
       let documentData = await redisClient.hGetAll(redisKey);
-
-      console.log(documentData, 'data')
 
       // If document is not in Redis, fetch from MongoDB and store in Redis
       if (Object.keys(documentData).length === 0) {

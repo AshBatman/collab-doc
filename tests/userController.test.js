@@ -1,42 +1,65 @@
-const request = require('supertest');
-const express = require('express');
-const userController = require('../src/controllers/userController');
-const Users = require('../src/models/userModel');
+const Users = require("../src/models/userModel");
+const { statusCodes } = require("../src/utils/constants");
+const { createUser } = require("../src/controllers/userController");
 
-const app = express();
-app.use(express.json());
-app.get('/api/users/:userName', userController.createUser);
+jest.mock("../src/models/userModel");
 
-jest.mock('../src/models/userModel');
+describe("createUser", () => {
+  let req, res;
 
-describe('User Controller - createUser', () => {
-    afterEach(() => {
-        jest.clearAllMocks();
+  beforeEach(() => {
+    req = { params: { userName: "testUser" } };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return an existing user if found", async () => {
+    Users.findOne.mockResolvedValue({ userID: "12345", userName: "testUser" });
+    await createUser(req, res);
+
+    expect(Users.findOne).toHaveBeenCalledWith({ userName: "testUser" });
+    expect(res.status).toHaveBeenCalledWith(statusCodes.SUCCESS.code);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "User already exists",
+      userID: "12345",
     });
+  });
 
-    test('should return 200 success while creating new user', async () => {
-        const mockUser = {
-            userName: 'testuser',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
+  it("should create a new user if not found", async () => {
+    Users.findOne.mockResolvedValue(null);
+    
+    const saveMock = jest.fn().mockResolvedValue();
+    Users.mockImplementation(() => ({
+      save: saveMock,
+      userID: "67890",
+    }));
 
-        Users.findOne.mockResolvedValue(mockUser);
+    await createUser(req, res);
 
-        const response = await request(app)
-            .get(`/api/users/testuser`);
-
-        expect(response.status).toBe(200);
-        expect(Users.findOne).toHaveBeenCalledWith({ userName: 'testuser' });
+    expect(Users.findOne).toHaveBeenCalledWith({ userName: "testUser" });
+    expect(saveMock).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(statusCodes.CREATED.code);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "User created",
+      userID: "67890",
     });
+  });
 
-    test('should return 500 on server error', async () => {
-        Users.findOne.mockRejectedValue(new Error('Database Error'));
+  it("should handle errors and return a 500 status code", async () => {
+    Users.findOne.mockRejectedValue(new Error("Database error"));
 
-        const response = await request(app)
-            .get('/api/users/testuser');
+    await createUser(req, res);
 
-        expect(response.status).toBe(500);
-        expect(response.body.message).toBe('Internal server error');
+    expect(Users.findOne).toHaveBeenCalledWith({ userName: "testUser" });
+    expect(res.status).toHaveBeenCalledWith(statusCodes.INTERNAL_SERVER_ERROR.code);
+    expect(res.json).toHaveBeenCalledWith({
+      message: statusCodes.INTERNAL_SERVER_ERROR.message,
     });
+  });
 });

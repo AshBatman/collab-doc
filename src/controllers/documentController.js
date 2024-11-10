@@ -5,17 +5,19 @@ const { v4: uuidv4 } = require("uuid");
 const redisClient = require("../config/redis");
 
 const createDocument = async (req, res) => {
-  const { title, ownerId } = req.body;
-
-  const newDocument = new Documents({
-    documentId: uuidv4(),
-    title,
-    ownerId,
-    collaborators: [],
-  });
-
-  await newDocument.save();
-  res.status(statusCodes.CREATED.code).json(newDocument);
+  try {
+    const { title, ownerId } = req.body;
+    const document = new Documents({
+      documentId: uuidv4(),
+      title,
+      ownerId,
+      collaborators: [],
+    });
+    const savedDocument = await document.save();
+    res.status(statusCodes.CREATED.code).json(savedDocument);
+  } catch (error) {
+    res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({ message: "Internal server error" });
+  }
 };
 
 const getDocumentOwner = async (userID) => {
@@ -23,11 +25,19 @@ const getDocumentOwner = async (userID) => {
 };
 
 const getCollaborators = async (collaboratorIds) => {
-  const collaborators = await Users.find({ userID: { $in: collaboratorIds } });
-  return collaborators.map((collab) => ({
-    userId: collab.userID,
-    username: collab.userName,
-  }));
+  try {
+    const collaborators = await Users.find({
+      userID: { $in: collaboratorIds },
+    });
+    return collaborators
+      .filter((collab) => collab.userID)
+      .map((collab) => ({
+        userId: collab.userID,
+        username: collab.userName,
+      }));
+  } catch (error) {
+    return [];
+  }
 };
 
 const fetchAllDocuments = async (req, res) => {
@@ -59,7 +69,7 @@ const fetchAllDocuments = async (req, res) => {
     );
     res.status(statusCodes.SUCCESS.code).json(documentsWithDetails);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch documents", error });
+    res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({ message: "Failed to fetch documents", error });
   }
 };
 
@@ -74,6 +84,7 @@ const fetchDocumentByID = async (req, res) => {
       : null;
 
     let document = await Documents.findOne({ documentId: id });
+    if (!document) res.status(statusCodes.NOT_FOUND.code).json({ message: "Document not found" });
 
     let collaboratorIds = [];
     let collaborators = [];
@@ -91,24 +102,26 @@ const fetchDocumentByID = async (req, res) => {
         documentId: document.documentId,
         title: document.title,
         content:
-        redisDocument.content && redisUpdatedAt && redisUpdatedAt > new Date(document.updatedAt)
+          redisDocument.content &&
+          redisUpdatedAt &&
+          redisUpdatedAt > new Date(document.updatedAt)
             ? redisDocument.content
             : document.content,
         updatedAt:
-        redisDocument.content && redisUpdatedAt && redisUpdatedAt > new Date(document.updatedAt)
+          redisDocument.content &&
+          redisUpdatedAt &&
+          redisUpdatedAt > new Date(document.updatedAt)
             ? redisUpdatedAt
             : document.updatedAt,
         owner: document.ownerId,
         ownerName: ownerName.userName,
-        collaborators: collaborators
+        collaborators: collaborators,
       };
 
       res.status(statusCodes.SUCCESS.code).json(newDocumentResponse);
-    } else {
-      res.status(404).json({ message: "Document not found" });
     }
   } catch (error) {
-    res.status(500).json({
+    res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({
       message: `Something went wrong while fetch the document ${req.params.id}`,
       error,
     });
@@ -145,7 +158,7 @@ const addCollaborator = async (req, res) => {
       res.json({ message: "User is already a collaborator" });
     }
   } catch (error) {
-    res.status(500).json({
+    res.status(statusCodes.INTERNAL_SERVER_ERROR.code).json({
       message: `Something went wrong while adding collaborator ${documentId}`,
       error,
     });

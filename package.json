@@ -10,6 +10,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "jest": {
+    "testEnvironment": "node"
+  },
   "lint-staged": {
     "*.js": [
       "eslint --fix",

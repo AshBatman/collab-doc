@@ -12,7 +12,7 @@ const statusCodes = {
     message: "Bad request",
   },
   NOT_FOUND: {
-    code: 400,
+    code: 404,
     message: "Not found",
   },
   INTERNAL_SERVER_ERROR: {
